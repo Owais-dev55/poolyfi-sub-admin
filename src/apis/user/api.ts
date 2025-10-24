@@ -653,6 +653,7 @@ export const getNotifications = async (limit: number = 5, page: number = 1): Pro
 // Get User Profile API response interface
 export interface GetUserProfileResponse {
   data: {
+    updatedAt: string | undefined;
     id: number;
     name: string;
     email: string;

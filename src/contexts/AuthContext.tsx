@@ -1,7 +1,23 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { loginUser, logoutUser, storeAuthToken, removeAuthToken, getAuthToken, getUserProfile, type LoginRequest, type LoginResponse } from '../apis/user/api';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from 'react';
+import {
+  loginUser,
+  logoutUser,
+  storeAuthToken,
+  removeAuthToken,
+  getAuthToken,
+  getUserProfile,
+  type LoginRequest,
+  type LoginResponse,
+} from '../apis/user/api';
 import { customToast } from '../utils/useCustomToast';
 
+// ----------------- Interfaces -----------------
 interface User {
   id: number;
   name: string;
@@ -13,7 +29,7 @@ interface User {
   isActive: boolean;
   isRider?: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string; // ✅ optional now
 }
 
 interface AuthContextType {
@@ -38,21 +54,33 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// ----------------- Provider -----------------
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing authentication on app load
+  // ✅ Load token + user from localStorage on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
       const token = getAuthToken();
+      const storedUser = localStorage.getItem('user');
+
+      if (token && storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+          setIsAuthenticated(true);
+        } catch {
+          localStorage.removeItem('user');
+        }
+      }
+
+      // Try refreshing user data from API
       if (token) {
         try {
-          // Fetch user profile to validate token and get current user data
           const response = await getUserProfile();
           if (!response.hasError && response.data) {
-            setUser({
+            const freshUser: User = {
               id: response.data.id,
               name: response.data.name,
               email: response.data.email,
@@ -61,47 +89,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               companyId: response.data.companyId,
               isDelete: response.data.isDelete,
               isActive: response.data.isActive,
-              isRider: undefined,
+              isRider: response.data.isRider ?? undefined,
               createdAt: response.data.createdAt,
-              updatedAt: response.data.createdAt
-            });
+              updatedAt: response.data.updatedAt,
+            };
+
+            setUser(freshUser);
             setIsAuthenticated(true);
+            localStorage.setItem('user', JSON.stringify(freshUser)); // ✅ Sync latest user
           } else {
-            // Token is invalid, clear it
+            // Invalid token → clear data
             removeAuthToken();
+            localStorage.removeItem('user');
             setIsAuthenticated(false);
             setUser(null);
           }
         } catch (error) {
           console.error('Failed to validate token:', error);
-          // Token is invalid or expired, clear it
           removeAuthToken();
+          localStorage.removeItem('user');
           setIsAuthenticated(false);
           setUser(null);
         }
       }
+
       setIsLoading(false);
     };
 
     checkAuthStatus();
   }, []);
 
+  // ✅ Login Function
   const login = async (credentials: LoginRequest): Promise<boolean> => {
     try {
       const response: LoginResponse = await loginUser(credentials);
-      
-      console.log('Login response:', response); // Debug log
-      
+      console.log('Login response:', response);
+
       if (!response.hasError && response.data) {
-        // Store the access token (prefer accessToken over session.token)
         const token = response.data.accessToken || response.data.session?.token;
         if (token) {
           storeAuthToken(token);
         }
-        
-        // Set user data from response
+
         if (response.data.user) {
-          setUser({
+          const loggedUser: User = {
             id: response.data.user.id,
             name: response.data.user.name,
             email: response.data.user.email,
@@ -112,53 +143,61 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             isActive: response.data.user.isActive,
             isRider: response.data.user.isRider ?? undefined,
             createdAt: response.data.user.createdAt,
-            updatedAt: response.data.user.updatedAt
-          });
+            updatedAt: response.data.user.updatedAt,
+          };
+
+          setUser(loggedUser);
+          localStorage.setItem('user', JSON.stringify(loggedUser)); // ✅ Store user persistently
         }
-        
+
         setIsAuthenticated(true);
-        customToast.success(response.message || 'Welcome back! You have successfully signed in.');
+        customToast.success(
+          response.message || 'Welcome back! You have successfully signed in.'
+        );
         return true;
       } else {
-        customToast.error(response.message || 'Login failed. Please check your credentials.');
+        customToast.error(
+          response.message || 'Login failed. Please check your credentials.'
+        );
         return false;
       }
     } catch (error) {
       console.error('Login error:', error);
-      
-      // Handle CORS errors specifically
-      if (error instanceof TypeError && error.message.includes('CORS')) {
-        customToast.error('CORS error: Unable to connect to the server. Please check your network connection.');
-      } else {
-        const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
-        customToast.error(errorMessage);
-      }
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Login failed. Please try again.';
+      customToast.error(errorMessage);
       return false;
     }
   };
 
+  // ✅ Logout Function
   const logout = async () => {
     try {
-      // Call the logout API
       const response = await logoutUser();
-      
       if (!response.hasError) {
-        customToast.success(response.message || 'You have been logged out successfully.');
+        customToast.success(
+          response.message || 'You have been logged out successfully.'
+        );
       } else {
-        customToast.error(response.message || 'Logout failed, but you have been logged out locally.');
+        customToast.error(
+          response.message || 'Logout failed, but logged out locally.'
+        );
       }
     } catch (error) {
       console.error('Logout error:', error);
-      customToast.error('Logout failed, but you have been logged out locally.');
+      customToast.error('Logout failed, but logged out locally.');
     } finally {
-      // Always clear local state regardless of API response
       removeAuthToken();
+      localStorage.removeItem('user'); // ✅ Clear user data
       setIsAuthenticated(false);
       setUser(null);
     }
   };
 
-  const value = {
+  // ----------------- Context Value -----------------
+  const value: AuthContextType = {
     isAuthenticated,
     user,
     login,

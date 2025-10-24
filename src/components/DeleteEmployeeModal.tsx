@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Modal, Button, message } from 'antd';
+import { Modal, Button } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { deleteUser } from '../apis/user/api';
 import type { Employee } from '../data/employeeData';
+import { customToast } from '../utils/useCustomToast';
 
 interface DeleteEmployeeModalProps {
   isOpen: boolean;
@@ -16,27 +17,35 @@ const DeleteEmployeeModal = ({ isOpen, onClose, onDeleteEmployee, employee }: De
 
   const handleDelete = async () => {
     if (!employee) return;
-    
+
     setIsLoading(true);
-    
+
     try {
-      // Convert string ID to number for API call
       const userId = parseInt(employee.id);
-      
-      // Call the delete API
       const response = await deleteUser(userId);
-      
+
       if (!response.hasError) {
-        message.success(response.message || 'Employee deleted successfully!');
+        customToast.success(response.message || 'Employee deleted successfully!');
         onDeleteEmployee();
         onClose();
       } else {
-        message.error(response.message || 'Failed to delete employee. Please try again.');
+        // ✅ If backend returns ownership or restriction message
+        if (response.message?.toLowerCase().includes('company owner')) {
+          customToast.warning('This user is the company owner and cannot be deleted.');
+        } else {
+          customToast.error(response.message || 'Failed to delete employee. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Delete employee error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete employee. Please try again.';
-      message.error(errorMessage);
+
+      // ✅ Detect specific backend constraint
+      const errorMessage =
+        error instanceof Error && error.message.includes('Company_ownerId_fkey')
+          ? 'This user is the company owner and cannot be deleted.'
+          : 'Failed to delete employee. Please try again.';
+
+      customToast.warning(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +75,7 @@ const DeleteEmployeeModal = ({ isOpen, onClose, onDeleteEmployee, employee }: De
             {employee?.avatar}
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-semibold text-gray-900 mb-1">
-              {employee?.name}
-            </h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">{employee?.name}</h3>
             <p className="text-xs text-gray-600 mb-1">{employee?.email}</p>
             <div className="flex items-center space-x-1.5">
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -79,16 +86,14 @@ const DeleteEmployeeModal = ({ isOpen, onClose, onDeleteEmployee, employee }: De
             </div>
           </div>
         </div>
-        
+
         <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <ExclamationCircleOutlined className="h-4 w-4 text-red-400" />
             </div>
             <div className="ml-2">
-              <h3 className="text-xs font-medium text-red-800">
-                Warning
-              </h3>
+              <h3 className="text-xs font-medium text-red-800">Warning</h3>
               <div className="mt-1 text-xs text-red-700">
                 <p>This action cannot be undone. The employee will be permanently removed from the system and all associated data will be lost.</p>
               </div>
@@ -97,11 +102,7 @@ const DeleteEmployeeModal = ({ isOpen, onClose, onDeleteEmployee, employee }: De
         </div>
 
         <div className="flex justify-end space-x-2 mt-6">
-          <Button
-            onClick={handleCancel}
-            size="middle"
-            className="px-6 py-1.5 text-sm font-medium"
-          >
+          <Button onClick={handleCancel} size="middle" className="px-6 py-1.5 text-sm font-medium">
             Cancel
           </Button>
 
