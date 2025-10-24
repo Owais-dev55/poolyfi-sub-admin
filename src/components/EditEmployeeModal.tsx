@@ -76,55 +76,61 @@ const EditEmployeeModal = ({ isOpen, onClose, onEditEmployee, employee }: EditEm
     }
   }, [employee, isOpen, form, departments]);
 
-  const handleSubmit = async (values: EmployeeFormData) => {
-    if (!employee) return;
-    
-    setIsLoading(true);
-    
-    try {
-      // Prepare API request data - only send allowed fields
-      const updateUserRequest: UpdateUserRequest = {
-        name: values.fullName,
-        phone: values.phoneNumber || undefined, // Only include if phone number is provided
-        departmentId: values.departmentId || null,
-        // Map role to isRider: Driver = true, Passenger = false
-        isRider: values.role === 'Driver' ? true : values.role === 'Passenger' ? false : null,
-        empId: values.empId && values.empId.trim() !== '' ? values.empId.trim() : null,
+const handleSubmit = async (values: EmployeeFormData) => {
+  if (!employee) return;
+  setIsLoading(true);
+
+  try {
+    // Normalize and validate payload before sending
+    const updateUserRequest: UpdateUserRequest = {
+      name: values.fullName.trim(),
+      phone: values.phoneNumber?.trim() || undefined,
+      // Department ID: must be a number or omitted
+      departmentId: values.departmentId ? Number(values.departmentId) : undefined,
+      // Convert role → boolean safely
+      isRider:
+        values.role === 'Driver'
+          ? true
+          : values.role === 'Passenger'
+          ? false
+          : undefined, // instead of null
+      empId: values.empId?.trim() || undefined,
+    };
+
+    console.log('Updating user with payload:', updateUserRequest);
+
+    const response = await updateUser(parseInt(employee.id), updateUserRequest);
+
+    if (!response.hasError && response.data) {
+      const updatedEmployeeData = {
+        ...values,
+        fullName: response.data.name,
+        email: response.data.email,
+        phoneNumber: response.data.phone,
+        role:
+          response.data.isRider === true
+            ? 'Driver'
+            : response.data.isRider === false
+            ? 'Passenger'
+            : values.role,
       };
 
-      // Log the payload for debugging
-      console.log('Updating user with payload:', updateUserRequest);
-
-      // Call the API
-      const response = await updateUser(parseInt(employee.id), updateUserRequest);
-      
-      if (!response.hasError && response.data) {
-        // Update the employee data with the response
-        const updatedEmployeeData = {
-          ...values,
-          // Map the response data back to form format
-          fullName: response.data.name,
-          email: response.data.email,
-          phoneNumber: response.data.phone,
-          // Map isRider back to role
-          role: response.data.isRider === true ? 'Driver' : response.data.isRider === false ? 'Passenger' : values.role,
-        };
-        
-        onEditEmployee(employee.id, updatedEmployeeData);
-        message.success(response.message || 'Employee updated successfully!');
-        form.resetFields();
-        onClose();
-      } else {
-        message.error(response.message || 'Failed to update employee. Please try again.');
-      }
-    } catch (error) {
-      console.error('Update employee error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update employee. Please try again.';
-      message.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      onEditEmployee(employee.id, updatedEmployeeData);
+      message.success(response.message || 'Employee updated successfully!');
+      form.resetFields();
+      onClose();
+    } else {
+      message.error(response.message || 'Failed to update employee. Please try again.');
     }
-  };
+  } catch (error) {
+    console.error('Update employee error:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to update employee. Please try again.';
+    message.error(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleCancel = () => {
     form.resetFields();
