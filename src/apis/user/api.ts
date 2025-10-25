@@ -1236,6 +1236,9 @@ export const updatePassword = async (passwordData: UpdatePasswordRequest): Promi
       throw new Error(data.message || 'Failed to update password');
     }
 
+    localStorage.removeItem('auth_token');
+    window.location.replace('/login');
+    
     return data;
   } catch (error) {
     console.error('Update Password API Error:', error);
