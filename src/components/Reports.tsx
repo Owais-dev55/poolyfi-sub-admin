@@ -86,7 +86,7 @@ const CustomDropdown = ({ options, value, onChange, placeholder, className = "" 
 const Reports = () => {
   const { user } = useAuth();
   const [reportType, setReportType] = useState('Leaderboard Report');
-  const [selectedMonth, setSelectedMonth] = useState('September 2025');
+  // const [selectedMonth, setSelectedMonth] = useState('September 2025');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [generateSuccess, setGenerateSuccess] = useState<string | null>(null);
@@ -116,8 +116,30 @@ const Reports = () => {
   const [downloadingReports, setDownloadingReports] = useState<Set<number>>(new Set());
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const getPreviousMonthYear = () => {
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1);
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthName = monthNames[prevMonth.getMonth()];
+  const year = prevMonth.getFullYear();
+  return `${monthName} ${year}`;
+};
+
+const [selectedMonth, setSelectedMonth] = useState(getPreviousMonthYear());
+const months = Array.from({ length: 12 }, (_, i) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - (i + 1));
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+});
   const reportTypes = ['Leaderboard Report', 'Oxygen Safe Report', 'Annual Summary Report'];
-  const months = ['January 2025', 'February 2025', 'March 2025', 'April 2025', 'May 2025', 'June 2025', 'July 2025', 'August 2025', 'September 2025', 'October 2025', 'November 2025', 'December 2025'];
+  // const months = ['January 2025', 'February 2025', 'March 2025', 'April 2025', 'May 2025', 'June 2025', 'July 2025', 'August 2025', 'September 2025', 'October 2025', 'November 2025', 'December 2025'];
 
   // Fetch reports metadata from API
   const fetchReportsMeta = async () => {
