@@ -545,6 +545,13 @@ export const deleteDepartment = async (departmentId: number): Promise<DeleteDepa
   }
 };
 
+
+window.addEventListener('storage', (event) => {
+  if (event.key === 'auth_token' && event.newValue === null) {
+    window.location.replace('/login');
+  }
+});
+
 // Logout API function
 export const logoutUser = async (): Promise<{ hasError: boolean; message: string }> => {
   try {
@@ -562,6 +569,15 @@ export const logoutUser = async (): Promise<{ hasError: boolean; message: string
     });
 
     const data = await response.json();
+
+    localStorage.removeItem('auth_token');
+    // localStorage.removeItem('user_data');
+    // localStorage.removeItem('user')
+    // localStorage.removeItem('session_data')
+
+    localStorage.setItem('logout' , Date.now().toString());
+
+    window.location.replace('/login');
 
     if (!response.ok) {
       throw new Error(data.message || 'Failed to logout');

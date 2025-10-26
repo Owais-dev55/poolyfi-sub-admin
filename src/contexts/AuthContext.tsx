@@ -119,6 +119,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuthStatus();
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'auth_token' && event.newValue === null) {
+        
+        setIsAuthenticated(false);
+        customToast.info('You have been logged out in another tab');
+        window.location.replace('/login'); 
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   // ✅ Login Function
   const login = async (credentials: LoginRequest): Promise<boolean> => {
     try {
@@ -190,9 +206,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       customToast.error('Logout failed, but logged out locally.');
     } finally {
       removeAuthToken();
+      localStorage.removeItem('auth_token'); // ✅ Clear auth token
       localStorage.removeItem('user'); // ✅ Clear user data
+      localStorage.removeItem('session_data');
+      localStorage.removeItem('user_data');
+
+      localStorage.setItem('logout', Date.now().toString()); // ✅ Notify other tabs
+
       setIsAuthenticated(false);
       setUser(null);
+      window.location.replace('/login');
     }
   };
 
