@@ -7,7 +7,6 @@ import CustomToastContainer from './components/CustomToast';
 const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Show loading screen while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

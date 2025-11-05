@@ -246,11 +246,53 @@ const EmployeeManagement = () => {
   const passengers = metaError ? employees.filter(emp => emp.role === 'Passenger').length : employeeMeta.totalPassengers;
   const activeNow = metaError ? employees.filter(emp => emp.status === 'Active').length : employeeMeta.activeRides;
 
-  const handleAddEmployee = () => {
-    // Refresh the employee list from API after adding
-    fetchEmployees();
+ // Called by AddEmployeeModal with the created employee object
+const handleAddEmployee = (createdEmployee: any) => {
+  try {
+    // Convert createdEmployee to the local Employee shape used by this component
+    const emp: Employee = {
+      id: createdEmployee.id ? createdEmployee.id.toString() : (createdEmployee.empId ?? String(Date.now())),
+      name: createdEmployee.fullName ?? createdEmployee.name ?? '',
+      email: createdEmployee.email ?? '',
+      role: createdEmployee.isRider === null
+              ? 'Owner'
+              : (typeof createdEmployee.isRider === 'boolean'
+                 ? (createdEmployee.isRider ? 'Driver' : 'Passenger')
+                 : (createdEmployee.role ?? 'Passenger')),
+      department: getDepartmentName(createdEmployee.departmentId ?? createdEmployee.departmentId),
+      departmentId: createdEmployee.departmentId ?? null,
+      status: typeof createdEmployee.isActive === 'boolean' ? (createdEmployee.isActive ? 'Active' : 'Inactive') : 'Active',
+      avatar: (createdEmployee.fullName ?? createdEmployee.name ?? '').split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+      isRider: createdEmployee.isRider ?? (createdEmployee.role === 'Driver' ? true : createdEmployee.role === 'Passenger' ? false : null),
+      empId: createdEmployee.empId ?? createdEmployee.empId ?? ''
+    };
+
+    // Update employees list locally so UI updates instantly
+    setEmployees(prev => [...prev, emp]);
+
+    // Update metadata counts immediately (if we rely on API meta, update that too)
+    if (!metaError) {
+      setEmployeeMeta(prev => ({
+        ...prev,
+        totalEmployees: prev.totalEmployees + 1,
+        totalDrivers: emp.role === 'Driver' ? prev.totalDrivers + 1 : prev.totalDrivers,
+        totalPassengers: emp.role === 'Passenger' ? prev.totalPassengers + 1 : prev.totalPassengers,
+      }));
+    }
+
+    // they will reflect the addition automatically because employees state changed.
+    // If you show counts by deriving from employees when metaError is true,
+
     customToast.success('Employee Added! New employee has been successfully added to the system.');
-  };
+  } catch (err) {
+    console.error('handleAddEmployee error:', err);
+    // fallback: re-fetch full list if something unexpected happens
+    fetchEmployees();
+    fetchEmployeeMeta();
+    customToast.error('Something went wrong while updating the list. Refreshed data.');
+  }
+};
+
 
   const handleEditEmployee = (employeeId: string, updatedEmployeeData: any) => {
     // Get the department name from the department ID using the mapping

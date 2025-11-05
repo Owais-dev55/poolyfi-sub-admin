@@ -15,7 +15,7 @@ interface EmployeeFormData {
   role: string;
   departmentId: number | null;
   password: string;
-  empId?: string;
+  empId: string;
 }
 
 interface AddEmployeeModalProps {
@@ -152,7 +152,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }: AddEmployeeModalPr
             <Input prefix={<UserOutlined className="text-gray-400 text-xs" />} placeholder="Enter employee name" size="middle" />
           </Form.Item>
 
-          <Form.Item name="empId" label={<span className="text-sm">Employee ID (Optional)</span>}>
+          <Form.Item name="empId" label={<span className="text-sm">Employee ID</span>} rules={[{required: true}]}>
             <Input prefix={<IdcardOutlined className="text-gray-400 text-xs" />} placeholder="Enter employee ID" size="middle" />
           </Form.Item>
 
