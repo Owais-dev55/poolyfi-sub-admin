@@ -301,9 +301,10 @@ const EmployeeManagement = () => {
               ? "Driver"
               : "Passenger"
             : createdEmployee.role ?? "Passenger",
-        department: getDepartmentName(
-          createdEmployee.departmentId ?? createdEmployee.departmentId
-        ),
+       department:
+  createdEmployee.departmentName ??
+  getDepartmentName(createdEmployee.departmentId ?? null) ??
+  '—',
         departmentId: createdEmployee.departmentId ?? null,
         status:
           typeof createdEmployee.isActive === "boolean"
