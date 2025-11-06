@@ -97,47 +97,49 @@ const EmployeeManagement = () => {
 
   // Fetch employees from API
   const fetchEmployees = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getUsers();
+  try {
+    setIsLoading(true);
+    const response = await getUsers();
 
-      if (!response.hasError && response.data) {
-        // Convert API data to Employee format
-        const employeeData: Employee[] = response.data.map((user: User) => ({
-          id: user.id.toString(),
-          name: user.name,
-          email: user.email,
-          role:
-            user.isRider === null
-              ? "Owner"
-              : user.isRider
-              ? "Driver"
-              : "Passenger",
-          department: getDepartmentName(user.departmentId),
-          departmentId: user.departmentId,
-          status: user.isActive ? "Active" : "Inactive",
-          avatar: user.name
-            .split(" ")
-            .map((n: string) => n[0])
-            .join("")
-            .toUpperCase(),
-          isRider: user.isRider,
-          empId: user.empId,
-        }));
+    if (!response.hasError && response.data) {
+      // Convert API data to Employee format
+      const employeeData: Employee[] = response.data.map((user: User) => ({
+        id: user.id.toString(),
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phone ?? '', // <-- Add this line
+        role:
+          user.isRider === null
+            ? "Owner"
+            : user.isRider
+            ? "Driver"
+            : "Passenger",
+        department: getDepartmentName(user.departmentId),
+        departmentId: user.departmentId,
+        status: user.isActive ? "Active" : "Inactive",
+        avatar: user.name
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase(),
+        isRider: user.isRider,
+        empId: user.empId,
+      }));
 
-        setEmployees(employeeData);
-      } else {
-        customToast.error(response.message || "Failed to fetch employees");
-      }
-    } catch (error) {
-      console.error("Fetch employees error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch employees";
-      customToast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      setEmployees(employeeData);
+    } else {
+      customToast.error(response.message || "Failed to fetch employees");
     }
-  };
+  } catch (error) {
+    console.error("Fetch employees error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch employees";
+    customToast.error(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Load employees and departments on component mount
   useEffect(() => {
