@@ -373,35 +373,69 @@ const EmployeeManagement = () => {
 
 
   const handleEditEmployee = (employeeId: string, updatedEmployeeData: any) => {
-    // Get the department name from the department ID using the mapping
-    const departmentName = getDepartmentName(updatedEmployeeData.departmentId);
+  // Get department name
+  const departmentName = getDepartmentName(updatedEmployeeData.departmentId);
 
-    setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === employeeId
-          ? {
-              ...emp,
-              name: updatedEmployeeData.fullName,
-              email: updatedEmployeeData.email,
-              role: updatedEmployeeData.role,
-              department: departmentName,
-              departmentId: updatedEmployeeData.departmentId,
-              avatar: updatedEmployeeData.fullName
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .toUpperCase(),
-            }
-          : emp
-      )
+  // Update the employee list
+  setEmployees((prev) =>
+    prev.map((emp) =>
+      emp.id === employeeId
+        ? {
+            ...emp,
+            name: updatedEmployeeData.fullName,
+            email: updatedEmployeeData.email,
+            role: updatedEmployeeData.role,
+            department: departmentName,
+            departmentId: updatedEmployeeData.departmentId,
+            avatar: updatedEmployeeData.fullName
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase(),
+          }
+        : emp
+    )
+  );
+
+  // After updating employees, recalculate totals
+  setEmployees((prev) => {
+    const newEmployees = prev.map((emp) =>
+      emp.id === employeeId
+        ? {
+            ...emp,
+            name: updatedEmployeeData.fullName,
+            email: updatedEmployeeData.email,
+            role: updatedEmployeeData.role,
+            department: departmentName,
+            departmentId: updatedEmployeeData.departmentId,
+            avatar: updatedEmployeeData.fullName
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase(),
+          }
+        : emp
     );
 
-    // Refresh the employee list from API to ensure data consistency
-    fetchEmployees();
-    customToast.success(
-      "Employee Updated! Employee information has been successfully updated."
-    );
-  };
+    // Count roles
+    const totalDrivers = newEmployees.filter((e) => e.role === "Driver").length;
+    const totalPassengers = newEmployees.filter((e) => e.role === "Passenger").length;
+
+    setEmployeeMeta((meta) => ({
+      ...meta,
+      totalEmployees: newEmployees.length,
+      totalDrivers,
+      totalPassengers,
+    }));
+
+    return newEmployees;
+  });
+
+  customToast.success(
+    "Employee Updated! Employee information has been successfully updated."
+  );
+};
+
 
   const handleEditClick = (employee: Employee) => {
     setSelectedEmployee(employee);
