@@ -94,6 +94,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }: AddEmployeeModalPr
       if (!response.hasError && response.data) {
         const createdEmployee = {
           ...values,
+          phoneNumber: response.data.phone,
           id: response.data.id,
           departmentId: response.data.departmentId,
           companyId: response.data.companyId,
@@ -102,7 +103,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }: AddEmployeeModalPr
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt,
         };
-        
+        console.log("✅ createdEmployee before sending to parent:", createdEmployee);
         onAddEmployee(createdEmployee);
         toast.success(response.message || 'Employee added successfully!');
         form.resetFields();

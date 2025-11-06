@@ -7,7 +7,7 @@ import { getDepartments, updateUser, type Department, type UpdateUserRequest } f
 interface EmployeeFormData {
   fullName: string;
   email: string;
-  phoneNumber: string;
+  phone: string;
   role: string;
   departmentId: number | null;
   empId?: string;
@@ -68,13 +68,18 @@ const EditEmployeeModal = ({ isOpen, onClose, onEditEmployee, employee }: EditEm
       form.setFieldsValue({
         fullName: employee.name,
         email: employee.email,
-        phoneNumber: '', // Phone number not in Employee type, so empty
+        phoneNumber: employee.phoneNumber ?? '',  // Phone number not in Employee type, so empty
         role: employee.role,
         departmentId: employee.departmentId, // Use the departmentId directly from employee data
         empId: employee.empId || '', // Pre-fill empId if it exists
       });
     }
   }, [employee, isOpen, form, departments]);
+
+  useEffect(() => {
+   console.log('Employee data for editing:', employee);
+  }, [employee]);
+    
 
 const handleSubmit = async (values: EmployeeFormData) => {
   if (!employee) return;
@@ -84,7 +89,7 @@ const handleSubmit = async (values: EmployeeFormData) => {
     // Normalize and validate payload before sending
     const updateUserRequest: UpdateUserRequest = {
       name: values.fullName.trim(),
-      phone: values.phoneNumber?.trim() || undefined,
+      phone: values.phone?.trim() || undefined,
       // Department ID: must be a number or omitted
       departmentId: values.departmentId ? Number(values.departmentId) : undefined,
       // Convert role → boolean safely
@@ -200,19 +205,21 @@ const handleSubmit = async (values: EmployeeFormData) => {
         </Form.Item>
 
         {/* Phone Number */}
-        <Form.Item
-          name="phoneNumber"
-          label={<span className="text-sm">Phone Number</span>}
-          rules={[
-            { pattern: /^[\+]?[1-9][\d]{0,15}$/, message: 'Please enter a valid phone number' }
-          ]}
-        >
-          <Input
-            prefix={<PhoneOutlined className="text-gray-400 text-xs" />}
-            placeholder="+1 (555) 123-4567"
-            size="middle"
-          />
-        </Form.Item>
+     <Form.Item
+  name="phoneNumber" // ✅ must match setFieldsValue key
+  label={<span className="text-sm">Phone Number</span>}
+  rules={[
+    { pattern: /^[\+]?[1-9][\d]{0,15}$/, message: 'Please enter a valid phone number' }
+  ]}
+>
+  <Input
+    prefix={<PhoneOutlined className="text-gray-400 text-xs" />}
+    placeholder="+1 (555) 123-4567"
+    size="middle"
+  />
+</Form.Item>
+
+
 
         {/* Role */}
         <Form.Item

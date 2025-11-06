@@ -1,6 +1,8 @@
 // Employee Management page data
 
 export interface Employee {
+  phone?: string ;
+  phoneNumber?: string;
   id: string;
   name: string;
   email: string;
